@@ -26,7 +26,7 @@ def get_token(mission_id,user_name,password):
 """
 
 #Ajout d'un nouveau geomarker et recuperation de son id
-def add_geomarker (token, data):
+def add_geomarker (mission_id,token, data):
     add= requests.post('https://safire.atmosphere.aero/api/v1/geomarkers/'+mission_id+'/',
                    json=data,
                    headers={'Authorization': 'Token '+token})
@@ -35,14 +35,14 @@ def add_geomarker (token, data):
     return id_geomarker
 
 #modification d'un geomarker a partir de son id
-def modify_geomarker(token, data,ID):
+def modify_geomarker(mission_id, token, data,ID):
 
     modify= requests.put('https://safire.atmosphere.aero/api/v1/geomarkers/'+mission_id+'/'+ID+'/',
               json=data,
               headers={"Authorization": "Token"+token})
 
 #suppression d'un geomarker a partir de son id
-def delete_geomarker(token, ID):
+def delete_geomarker(mission_id, token, ID):
     delete= requests.delete('https://safire.atmosphere.aero/api/v1/geomarkers/'+mission_id+'/'+ID+'/',
               headers={"Authorization": "Token "+token})
 
@@ -65,14 +65,14 @@ if __name__ == '__main__':
     point_data_json = {"feature":{"type":"Feature","geometry":{"type":"Point","coordinates":[4.84,48.03]},"properties":{"label": "ronan","group":"misc","color":"#ffff00"}}}
 
     # Creation d'un point
-    id_geomarker_1 = add_geomarker(token, point_data_json)
+    id_geomarker_1 = add_geomarker(mission_id, token, point_data_json)
     time.sleep(3)
 
     sys.exit()
     #modification du point
     relocate_point_data_json = {"feature":{"type":"Feature","geometry":{"type":"Point","coordinates":[-20,45]},"properties":{"group":"misc","color":"#ffff00"}}}
-    modify_geomarker(token, relocate_point_data_json, id_geomarker_1)
+    modify_geomarker(mission_id, token, relocate_point_data_json, id_geomarker_1)
     time.sleep(3)
 
     #suppression du point
-    delete_geomarker(token, id_geomarker_1)
+    delete_geomarker(mission_id, token, id_geomarker_1)

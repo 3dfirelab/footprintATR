@@ -57,7 +57,9 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 import requests
 import planete_api
-
+import pdb 
+import json 
+import numpy as np 
 roll, pitch, thead, altitude, longitude, latitude = None, None, None, None, None, None
 
 
@@ -240,6 +242,9 @@ if flag_plot:
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots()
 
+geomarker_time = []
+geomarker_id = []
+wrapped_feature_prev = None
 
 while True:
     try:
@@ -280,12 +285,32 @@ while True:
             
             #transfert vers planete
             if flag_toplanete: 
-                token = get_token(mission_id,user_name,password)
+                token = planete_api.get_token(mission_id,user_name,password)
 
                 # Creation d'un point
-                id_geomarker_1 = add_geomarker(token, gdf_.to_json())
+                #pdb.set_trace()
+                if wrapped_feature_prev is not None:
+                    #change color of prev
+                    wrapped_feature_prev['feature']['properties']['color']='#000000'
+                    
+                    planete_api.delete_geomarker(mission_id, token, geomarker_id[-1])
+                    time_prev = geomarker_time[-1]
+                    del geomarker_id[-1]
+                    del geomarker_time[-1]
+                    geomarker_id.append( planete_api.add_geomarker(mission_id, token, wrapped_feature_prev) )
+                    geomarker_time.append(time_prev)
 
+                feature =  json.loads(gdf_.to_crs(4326).to_json())['features'][0] 
+                feature['properties'] = {"group":"footprint","color":"#ff0000"}
+                wrapped_feature = {"feature": feature}
+                geomarker_id.append( planete_api.add_geomarker(mission_id, token, wrapped_feature) )
+                geomarker_time.append(current_timestamp)
+                
+                id_to_remove = np.where(np.array(geomarker_time) < geomarker_time[-1]-900)[0] #keep last 15min
+                for ii in id_to_remove:
+                    planete_api.delete_geomarker(mission_id, token, geomarker_id[ii])
 
+            wrapped_feature_prev = wrapped_feature
             
         else:
             logging.error(f'impossible d\'effectuer le calcul, l\'une des variables est None : '
