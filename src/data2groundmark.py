@@ -56,7 +56,7 @@ from datetime import datetime
 import pandas as pd 
 import matplotlib.pyplot as plt 
 import requests
-
+import planete_api
 
 roll, pitch, thead, altitude, longitude, latitude = None, None, None, None, None, None
 
@@ -142,6 +142,9 @@ def mqtt_on_message(client, userdata, message):
 ##################
 #      MAIN      #
 ##################
+mission_id = 'SILEX'
+user_name = os.environ['planete_username']
+password  = os.environ['planete_username_passwd']
 
 #download dem and dummy image if not present.
 url = ["https://www.dropbox.com/scl/fi/8wx3bxojhqawma6ky2ofm/dem.tif?rlkey=vbu6s8tnwcx2mx6gnldlc3d7z&st=frclgzy0&dl=1", 
@@ -230,9 +233,12 @@ params['demFile']        =  '{:s}/../data_static/dem/dem.tif'.format(script_dir)
 params['intparamFile']   =  '{:s}/../data_static/io/as240051_int_param.yaml'.format(script_dir)
 
 gdf_footprint = None
-# Set up the plot
-plt.ion()  # Turn on interactive mode
-fig, ax = plt.subplots()
+flag_plot=False
+flag_toplanete=True
+if flag_plot:
+    # Set up the plot
+    plt.ion()  # Turn on interactive mode
+    fig, ax = plt.subplots()
 
 
 while True:
@@ -260,19 +266,25 @@ while True:
                 gdf_footprint = gdf_
             else:
                 gdf_footprint = pd.concat([gdf_,gdf_footprint])
+           
+            if flag_plot:
+                ax.clear()
+                if len(gdf_footprint) > 1:
+                    gdf_footprint.iloc[1:].plot(ax=ax, edgecolor="black", facecolor="none",zorder=1, alpha=0.5)
+                gdf_footprint.iloc[[0]].plot(ax=ax, edgecolor="none", facecolor="red", zorder=0, alpha=0.2)
+                gdf_footprint.iloc[[0]].plot(ax=ax, edgecolor="red", facecolor="none", zorder=0)
+                
+                ax.set_title(f"{current_time_str}")
+                plt.draw()
+                plt.pause(0.5)  # Pause to allow update (adjust time as needed)
             
-            ax.clear()
-            if len(gdf_footprint) > 1:
-                gdf_footprint.iloc[1:].plot(ax=ax, edgecolor="black", facecolor="none",zorder=1, alpha=0.5)
-            gdf_footprint.iloc[[0]].plot(ax=ax, edgecolor="none", facecolor="red", zorder=0, alpha=0.2)
-            gdf_footprint.iloc[[0]].plot(ax=ax, edgecolor="red", facecolor="none", zorder=0)
-            
-            ax.set_title(f"{current_time_str}")
-            plt.draw()
-            plt.pause(0.5)  # Pause to allow update (adjust time as needed)
-
             #transfert vers planete
-            
+            if flag_toplanete: 
+                token = get_token(mission_id,user_name,password)
+
+                # Creation d'un point
+                id_geomarker_1 = add_geomarker(token, gdf_.to_json())
+
 
             
         else:
