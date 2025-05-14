@@ -24,5 +24,5 @@ run
 python data2groundmark.py
 ```
 
-## Pyhton Environment
+## Python Environment
 Both the broker emulator and the foot print calculation can be run with the pyhton env listed in `requirements.txt`
