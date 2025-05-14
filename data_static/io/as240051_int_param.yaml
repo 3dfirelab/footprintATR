@@ -1,0 +1,7 @@
+Integraph DMC:
+    type: pinhole
+    im_size: [1936, 1456]
+    focal_len: 6.0
+    sensor_size: [8.78944,6.61024]
+    cx: 0.0
+    cy: 0.0
