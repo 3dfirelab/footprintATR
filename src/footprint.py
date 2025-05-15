@@ -249,11 +249,12 @@ def tiff_bounds_to_gdf(tiff_path, time):
 
     # Create mask where data == 1
     mask = (da.data == 1)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
+
+    kernel = np.ones((5,5), np.uint8)
+    closed_mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
 
     # Extract shapes (vectorize)
-    results = shapes(da.data, mask=mask, transform=da.rio.transform())
+    results = shapes(closed_mask, mask=closed_mask, transform=da.rio.transform())
     results = list(results)
 
     # Convert to geometries

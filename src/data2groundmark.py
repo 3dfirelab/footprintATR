@@ -144,12 +144,20 @@ def mqtt_on_message(client, userdata, message):
 ##################
 #      MAIN      #
 ##################
+flag_plot=False
+flag_toplanete=True
+flag_saveAllfootprint=True # for comparaison with orthorectification later on
+if flag_plot: 
+    flag_saveAllfootprint = True
+ 
+#ip_server_planete =  '84.37.21.236'
+ip_server_planete =  'safire.atmosphere.aero'
 mission_id = 'SILEX'
 user_name = os.environ['planete_username']
 password  = os.environ['planete_username_passwd']
 
 #download dem and dummy image if not present.
-url = ["https://www.dropbox.com/scl/fi/8wx3bxojhqawma6ky2ofm/dem.tif?rlkey=vbu6s8tnwcx2mx6gnldlc3d7z&st=frclgzy0&dl=1", 
+url = ["https://www.dropbox.com/scl/fi/it70yyp1do53ntdjtu2y3/dem.tif?rlkey=izsx7loep9p7quw1w0n3q2fhr&st=hcd2frpw&dl=1",
        "https://www.dropbox.com/scl/fi/jhzj02teomnn1zrhd3xgz/template_atr42_visible.tif?rlkey=hd8i9gt4yzf90mowb27xib6wp&st=zespd51w&dl=1"]
 # Path to save
 path = ["../data_static/dem/dem.tif", "../data_static/template_atr42_visible.tif"]
@@ -235,8 +243,6 @@ params['demFile']        =  '{:s}/../data_static/dem/dem.tif'.format(script_dir)
 params['intparamFile']   =  '{:s}/../data_static/io/as240051_int_param.yaml'.format(script_dir)
 
 gdf_footprint = None
-flag_plot=False
-flag_toplanete=True
 if flag_plot:
     # Set up the plot
     plt.ion()  # Turn on interactive mode
@@ -266,11 +272,12 @@ while True:
             gdf_ = footprint.orthro(row_dummy_file, time.time(), 
                                     latitude,longitude,altitude,roll,pitch,thead, 
                                     params)
-
-            if gdf_footprint is None:
-                gdf_footprint = gdf_
-            else:
-                gdf_footprint = pd.concat([gdf_,gdf_footprint])
+            gdf_['geometry'] = gdf_['geometry'].simplify(tolerance=100, preserve_topology=True)
+            if flag_saveAllfootprint: 
+                if gdf_footprint is None:
+                    gdf_footprint = gdf_
+                else:
+                    gdf_footprint = pd.concat([gdf_,gdf_footprint])
            
             if flag_plot:
                 ax.clear()
@@ -285,7 +292,7 @@ while True:
             
             #transfert vers planete
             if flag_toplanete: 
-                token = planete_api.get_token(mission_id,user_name,password)
+                token = planete_api.get_token(ip_server_planete, mission_id,user_name,password)
 
                 # Creation d'un point
                 #pdb.set_trace()
@@ -293,22 +300,24 @@ while True:
                     #change color of prev
                     wrapped_feature_prev['feature']['properties']['color']='#000000'
                     
-                    planete_api.delete_geomarker(mission_id, token, geomarker_id[-1])
-                    time_prev = geomarker_time[-1]
-                    del geomarker_id[-1]
-                    del geomarker_time[-1]
-                    geomarker_id.append( planete_api.add_geomarker(mission_id, token, wrapped_feature_prev) )
-                    geomarker_time.append(time_prev)
+                    #planete_api.delete_geomarker(mission_id, token, geomarker_id[-1])
+                    #time_prev = geomarker_time[-1]
+                    #del geomarker_id[-1]
+                    #del geomarker_time[-1]
+                    #geomarker_id.append( planete_api.add_geomarker(mission_id, token, wrapped_feature_prev) )
+                    #geomarker_time.append(time_prev)
+                    
+                    planete_api.modify_geomarker(ip_server_planete, mission_id, token, wrapped_feature_prev, geomarker_id[-1])
 
                 feature =  json.loads(gdf_.to_crs(4326).to_json())['features'][0] 
                 feature['properties'] = {"group":"footprint","color":"#ff0000"}
                 wrapped_feature = {"feature": feature}
-                geomarker_id.append( planete_api.add_geomarker(mission_id, token, wrapped_feature) )
+                geomarker_id.append( planete_api.add_geomarker(ip_server_planete, mission_id, token, wrapped_feature) )
                 geomarker_time.append(current_timestamp)
                 
                 id_to_remove = np.where(np.array(geomarker_time) < geomarker_time[-1]-900)[0] #keep last 15min
                 for ii in id_to_remove:
-                    planete_api.delete_geomarker(mission_id, token, geomarker_id[ii])
+                    planete_api.delete_geomarker(ip_server_planete, mission_id, token, geomarker_id[ii])
 
             wrapped_feature_prev = wrapped_feature
             
@@ -322,6 +331,13 @@ while True:
         time.sleep(sleep)
 
     except KeyboardInterrupt:
+        if flag_saveAllfootprint:
+            print('save all footPrint')
+            outdir = f"{script_dir}/../save_footPrint/"
+            os.makedirs(outdir, exist_ok=True)
+            dt = datetime.now()
+            formatted = dt.strftime("%Y%m%d-%H%M")
+            gdf_footprint.to_file(f"{outdir}/footprint_{formatted}.gpkg",driver='GPKG') 
         logging.info('interruption volontaire du script')
         print('disconnecting from mosquitto...')
         mqtt_client.loop_stop()

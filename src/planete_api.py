@@ -5,12 +5,16 @@ import time #timer pour l'exemple
 import sys
 import os 
 
-def get_token(mission_id,user_name,password):
+
+#ip_server_planet =  '84.37.21.236'
+ip_server_planet =  'safire.atmosphere.aero'
+
+def get_token(ip_server_planete, mission_id,user_name,password):
     """ Récuperation du token d'identification pour pouvoir faire les requetes """
     #user_name = #format str
     #password =  #format str
     #requete pour obtenir le token d'identification du compte utilise
-    result= requests.post('https://safire.atmosphere.aero/api/v1/auth/token/login/', 
+    result= requests.post(f'https://{ip_server_planete}/api/v1/auth/token/login/', 
                           data= {"username":user_name,"password":password}) 
     # permet d'afficher le resultat d'une requete , utilisable aussi pour les autres requetes , 
     # utile pour le debug ou recolte d'info comme dans la fonction add_geomarker
@@ -26,8 +30,8 @@ def get_token(mission_id,user_name,password):
 """
 
 #Ajout d'un nouveau geomarker et recuperation de son id
-def add_geomarker (mission_id,token, data):
-    add= requests.post('https://safire.atmosphere.aero/api/v1/geomarkers/'+mission_id+'/',
+def add_geomarker (ip_server_planete, mission_id,token, data):
+    add= requests.post(f'https://{ip_server_planete}/api/v1/geomarkers/'+mission_id+'/',
                    json=data,
                    headers={'Authorization': 'Token '+token})
     add_result = json.loads(add.text)
@@ -35,15 +39,16 @@ def add_geomarker (mission_id,token, data):
     return id_geomarker
 
 #modification d'un geomarker a partir de son id
-def modify_geomarker(mission_id, token, data,ID):
+def modify_geomarker(ip_server_planete, mission_id, token, data,ID):
 
-    modify= requests.put('https://safire.atmosphere.aero/api/v1/geomarkers/'+mission_id+'/'+ID+'/',
+    modify= requests.put(f'https://{ip_server_planete}/api/v1/geomarkers/'+mission_id+'/'+ID+'/',
               json=data,
-              headers={"Authorization": "Token"+token})
+              headers={"Authorization": "Token "+token})
+    #print(modify.text) 
 
 #suppression d'un geomarker a partir de son id
-def delete_geomarker(mission_id, token, ID):
-    delete= requests.delete('https://safire.atmosphere.aero/api/v1/geomarkers/'+mission_id+'/'+ID+'/',
+def delete_geomarker(ip_server_planete, mission_id, token, ID):
+    delete= requests.delete(f'https://{ip_server_planete}/api/v1/geomarkers/'+mission_id+'/'+ID+'/',
               headers={"Authorization": "Token "+token})
 
 

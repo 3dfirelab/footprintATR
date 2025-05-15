@@ -26,3 +26,10 @@ python data2groundmark.py
 
 ## Python Environment
 Both the broker emulator and the foot print calculation can be run with the pyhton env listed in `requirements.txt`
+To install the environment using conda:
+```
+conda create -n footprint python=3.11.12  # Or your preferred Python version
+conda activate footprint
+pip install -r requirements.txt
+```
+
